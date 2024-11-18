@@ -36,13 +36,20 @@ public class RoomCanvas extends JPanel {
                     int dx = currentPoint.x - dragStart.x;
                     int dy = currentPoint.y - dragStart.y;
 
-                    // Check if we are resizing or moving
                     if (SwingUtilities.isRightMouseButton(e)) {
                         // Resizing
-                        selectedRoom.resize(selectedRoom.getWidth() + dx, selectedRoom.getHeight() + dy);
+                        int newWidth = selectedRoom.getWidth() + dx;
+                        int newHeight = selectedRoom.getHeight() + dy;
+                        if (!doesOverlap(selectedRoom, selectedRoom.getX(), selectedRoom.getY(), newWidth, newHeight)) {
+                            selectedRoom.resize(newWidth, newHeight);
+                        }
                     } else {
                         // Moving
-                        selectedRoom.setPosition(selectedRoom.getX() + dx, selectedRoom.getY() + dy);
+                        int newX = selectedRoom.getX() + dx;
+                        int newY = selectedRoom.getY() + dy;
+                        if (!doesOverlap(selectedRoom, newX, newY, selectedRoom.getWidth(), selectedRoom.getHeight())) {
+                            selectedRoom.setPosition(newX, newY);
+                        }
                     }
 
                     dragStart = currentPoint;
@@ -54,8 +61,12 @@ public class RoomCanvas extends JPanel {
 
     // Add a room to the canvas
     public void addRoom(Room room) {
-        rooms.add(room);
-        repaint();
+        if (!doesOverlap(room, room.getX(), room.getY(), room.getWidth(), room.getHeight())) {
+            rooms.add(room);
+            repaint();
+        } else {
+            JOptionPane.showMessageDialog(this, "Cannot add room: It overlaps with another room.");
+        }
     }
 
     // Delete the currently selected room
@@ -65,6 +76,20 @@ public class RoomCanvas extends JPanel {
             selectedRoom = null;
             repaint();
         }
+    }
+
+    // Check if a room overlaps with other rooms
+    private boolean doesOverlap(Room target, int x, int y, int width, int height) {
+        Rectangle targetBounds = new Rectangle(x, y, width, height);
+        for (Room room : rooms) {
+            if (room != target) {
+                Rectangle roomBounds = new Rectangle(room.getX(), room.getY(), room.getWidth(), room.getHeight());
+                if (targetBounds.intersects(roomBounds)) {
+                    return true; // Overlap detected
+                }
+            }
+        }
+        return false;
     }
 
     // Find a room at a given point
@@ -95,7 +120,7 @@ public class RoomCanvas extends JPanel {
         if (selectedRoom != null) {
             g2.setColor(Color.BLACK);
             g2.setStroke(new BasicStroke(2));
-            g2.drawRect(selectedRoom.getX() - 1, selectedRoom.getY() - 1, 
+            g2.drawRect(selectedRoom.getX() - 1, selectedRoom.getY() - 1,
                         selectedRoom.getWidth() + 2, selectedRoom.getHeight() + 2);
         }
     }
